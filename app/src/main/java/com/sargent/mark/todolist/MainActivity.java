@@ -57,25 +57,30 @@ public class MainActivity extends AppCompatActivity implements AddToDoFragment.O
     @Override
     protected void onStart() {
         super.onStart();
-
         helper = new DBHelper(this);
         db = helper.getWritableDatabase();
         cursor = getAllItems(db);
 
+        // overridden the constructor to provide a db update for when the checkbox state changes
         adapter = new ToDoListAdapter(cursor, new ToDoListAdapter.ItemClickListener() {
-
             @Override
             public void onItemClick(int pos, String description, String duedate, long id) {
                 Log.d(TAG, "item click id: " + id);
                 String[] dateInfo = duedate.split("-");
-                int year = Integer.parseInt(dateInfo[0].replaceAll("\\s",""));
-                int month = Integer.parseInt(dateInfo[1].replaceAll("\\s",""));
-                int day = Integer.parseInt(dateInfo[2].replaceAll("\\s",""));
+                int year = Integer.parseInt(dateInfo[0].replaceAll("\\s", ""));
+                int month = Integer.parseInt(dateInfo[1].replaceAll("\\s", ""));
+                int day = Integer.parseInt(dateInfo[2].replaceAll("\\s", ""));
 
                 FragmentManager fm = getSupportFragmentManager();
 
                 UpdateToDoFragment frag = UpdateToDoFragment.newInstance(year, month, day, description, id);
                 frag.show(fm, "updatetodofragment");
+            }
+        }, new ToDoListAdapter.CheckedListener() {
+            @Override
+            public void onCheckedChange(boolean checked, long id) {
+                Log.d(TAG, "item checked id: " + id);
+                updateToDoState(db, (checked ? "yes" : "no"), id);
             }
         });
 
@@ -109,8 +114,6 @@ public class MainActivity extends AppCompatActivity implements AddToDoFragment.O
         return String.format("%d-%d-%d", year, month, day);
     }
 
-
-
     private Cursor getAllItems(SQLiteDatabase db) {
         return db.query(
                 Contract.TABLE_TODO.TABLE_NAME,
@@ -127,6 +130,7 @@ public class MainActivity extends AppCompatActivity implements AddToDoFragment.O
         ContentValues cv = new ContentValues();
         cv.put(Contract.TABLE_TODO.COLUMN_NAME_DESCRIPTION, description);
         cv.put(Contract.TABLE_TODO.COLUMN_NAME_DUE_DATE, duedate);
+        cv.put(Contract.TABLE_TODO.COLUMN_NAME_CHECKED, "no");
         return db.insert(Contract.TABLE_TODO.TABLE_NAME, null, cv);
     }
 
@@ -137,12 +141,21 @@ public class MainActivity extends AppCompatActivity implements AddToDoFragment.O
 
 
     private int updateToDo(SQLiteDatabase db, int year, int month, int day, String description, long id){
-
         String duedate = formatDate(year, month, day);
 
         ContentValues cv = new ContentValues();
         cv.put(Contract.TABLE_TODO.COLUMN_NAME_DESCRIPTION, description);
         cv.put(Contract.TABLE_TODO.COLUMN_NAME_DUE_DATE, duedate);
+
+        return db.update(Contract.TABLE_TODO.TABLE_NAME, cv, Contract.TABLE_TODO._ID + "=" + id, null);
+    }
+
+    // separate query to update only the state of the clicked checkbox
+    private int updateToDoState(SQLiteDatabase db, String checked, long id) {
+        ContentValues cv = new ContentValues();
+        cv.put(Contract.TABLE_TODO.COLUMN_NAME_CHECKED, checked);
+
+        Log.d(TAG, "changing the state of id: " + id);
 
         return db.update(Contract.TABLE_TODO.TABLE_NAME, cv, Contract.TABLE_TODO._ID + "=" + id, null);
     }

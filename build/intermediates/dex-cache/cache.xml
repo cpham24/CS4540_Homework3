@@ -3,21 +3,21 @@
 
     <item
         is-multidex="true"
+        jar="/home/bill/Documents/CS4540/ToDoList/app/build/intermediates/incremental-classes/debug/instant-run-bootstrap.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="25.0.2"
+        sha1="1fa7d3c619d7dedca9d5eca46cab10538968c41b">
+        <dex dex="/home/bill/Documents/CS4540/ToDoList/app/build/intermediates/transforms/dex/debug/folders/1000/10000/instant-run-bootstrap_c8572d1d16ad427d917b5241c76b41a4fe5209cb/classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
         jar="/home/bill/Documents/CS4540/ToDoList/app/build/intermediates/incremental-runtime-classes/debug/instant-run.jar"
         jumboMode="true"
         optimize="true"
         revision="25.0.2"
         sha1="3be78ebc2706b2e1fe2f12d5726887a92d6c183b">
         <dex dex="/home/bill/Documents/CS4540/ToDoList/app/build/intermediates/transforms/dex/debug/folders/1000/10000/instant-run_f178db94626234983e4fb94a2687485666d0a310/classes.dex" />
-    </item>
-    <item
-        is-multidex="true"
-        jar="/home/bill/Documents/CS4540/ToDoList/app/build/intermediates/incremental-classes/debug/instant-run-bootstrap.jar"
-        jumboMode="true"
-        optimize="true"
-        revision="25.0.2"
-        sha1="a805fe84d728d922e4639485ea1bdc4c8d28aee0">
-        <dex dex="/home/bill/Documents/CS4540/ToDoList/app/build/intermediates/transforms/dex/debug/folders/1000/10000/instant-run-bootstrap_c8572d1d16ad427d917b5241c76b41a4fe5209cb/classes.dex" />
     </item>
 
 </items>

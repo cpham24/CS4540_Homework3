@@ -7,12 +7,11 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.TextView;
 
 import com.sargent.mark.todolist.data.Contract;
-import com.sargent.mark.todolist.data.ToDoItem;
-
-import java.util.ArrayList;
 
 /**
  * Created by mark on 7/4/17.
@@ -21,7 +20,8 @@ import java.util.ArrayList;
 public class ToDoListAdapter extends RecyclerView.Adapter<ToDoListAdapter.ItemHolder> {
 
     private Cursor cursor;
-    private ItemClickListener listener;
+    private ItemClickListener clickListener;
+    private CheckedListener checkedListener;
     private String TAG = "todolistadapter";
 
     @Override
@@ -49,12 +49,17 @@ public class ToDoListAdapter extends RecyclerView.Adapter<ToDoListAdapter.ItemHo
         void onItemClick(int pos, String description, String duedate, long id);
     }
 
-    public ToDoListAdapter(Cursor cursor, ItemClickListener listener) {
-        this.cursor = cursor;
-        this.listener = listener;
+    public interface CheckedListener {
+        void onCheckedChange(boolean checked, long id);
     }
 
-    public void swapCursor(Cursor newCursor){
+    public ToDoListAdapter(Cursor cursor, ItemClickListener clickListener, CheckedListener checkedListener) {
+        this.cursor = cursor;
+        this.clickListener = clickListener;
+        this.checkedListener = checkedListener;
+    }
+
+    public void swapCursor(Cursor newCursor) {
         if (cursor != null) cursor.close();
         cursor = newCursor;
         if (newCursor != null) {
@@ -63,37 +68,55 @@ public class ToDoListAdapter extends RecyclerView.Adapter<ToDoListAdapter.ItemHo
         }
     }
 
-    class ItemHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+    /*
+     |  Added a CheckBox property named cb that references the checkbox in the view
+     |  Added and implemented necessary interfaces and methods to capture when the state of the checkbox changes
+     |
+     */
+    class ItemHolder extends RecyclerView.ViewHolder implements View.OnClickListener, CompoundButton.OnCheckedChangeListener {
         TextView descr;
         TextView due;
+        CheckBox cb;
         String duedate;
         String description;
+        String checked;
         long id;
 
-
+        // modified the constructor to get reference to checkbox view
         ItemHolder(View view) {
             super(view);
             descr = (TextView) view.findViewById(R.id.description);
             due = (TextView) view.findViewById(R.id.dueDate);
+            cb = (CheckBox) view.findViewById(R.id.checkbox);
             view.setOnClickListener(this);
+            cb.setOnCheckedChangeListener(this);
         }
 
+        // changed this function to also update the checkbox with info from database
         public void bind(ItemHolder holder, int pos) {
             cursor.moveToPosition(pos);
             id = cursor.getLong(cursor.getColumnIndex(Contract.TABLE_TODO._ID));
-            Log.d(TAG, "deleting id: " + id);
+            Log.d(TAG, "fetching todo item id: " + id);
 
             duedate = cursor.getString(cursor.getColumnIndex(Contract.TABLE_TODO.COLUMN_NAME_DUE_DATE));
             description = cursor.getString(cursor.getColumnIndex(Contract.TABLE_TODO.COLUMN_NAME_DESCRIPTION));
+            checked = cursor.getString(cursor.getColumnIndex(Contract.TABLE_TODO.COLUMN_NAME_CHECKED));
             descr.setText(description);
             due.setText(duedate);
+            cb.setChecked(checked.equals("yes"));
             holder.itemView.setTag(id);
         }
 
         @Override
         public void onClick(View v) {
             int pos = getAdapterPosition();
-            listener.onItemClick(pos, description, duedate, id);
+            clickListener.onItemClick(pos, description, duedate, id);
+        }
+
+        // overridden this function to capture checkbox state change
+        @Override
+        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+            checkedListener.onCheckedChange(isChecked, id);
         }
     }
 

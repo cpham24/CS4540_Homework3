@@ -70,11 +70,11 @@ public class UpdateToDoFragment extends DialogFragment {
 
         toDo.setText(description);
 
+        // added the following code to properly initialize the Spinner for user to change the category
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(view.getContext(), R.array.category_array, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         sp.setAdapter(adapter);
 
-        Log.d(TAG, "setting spinner, count = " + sp.getCount());
         for(int pos=0; pos<sp.getCount(); pos++) {
             if (sp.getItemAtPosition(pos).equals(category)) {
                 Log.d(TAG, "found category: " + category + " at " + pos);

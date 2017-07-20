@@ -13,6 +13,7 @@ public class Contract {
 
         public static final String COLUMN_NAME_DESCRIPTION = "description";
         public static final String COLUMN_NAME_DUE_DATE = "duedate";
+        // added string constants for checkbox and category columns
         public static final String COLUMN_NAME_CHECKED = "checked";
         public static final String COLUMN_NAME_CATEGORY = "category";
     }

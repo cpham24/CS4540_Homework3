@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">ToDo List</string>
+    <!--
+      |  added string arrays for categories
+      -->
     <string-array name="categories_array">
         <item>All</item>
         <item>Personal</item>

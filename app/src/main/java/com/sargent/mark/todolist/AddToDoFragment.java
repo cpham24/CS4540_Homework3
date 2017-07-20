@@ -58,6 +58,7 @@ public class AddToDoFragment extends DialogFragment{
             }
         });
 
+        // added the following code to properly initialize the spinner for selecting categories (defaults to "Personal")
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(view.getContext(), R.array.category_array, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         sp.setAdapter(adapter);

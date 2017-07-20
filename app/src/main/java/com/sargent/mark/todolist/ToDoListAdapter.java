@@ -49,6 +49,7 @@ public class ToDoListAdapter extends RecyclerView.Adapter<ToDoListAdapter.ItemHo
         void onItemClick(int pos, String description, String category, String duedate, long id);
     }
 
+    // added this interface to use as checkbox listener
     public interface CheckedListener {
         void onCheckedChange(boolean checked, long id);
     }

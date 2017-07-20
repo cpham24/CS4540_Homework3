@@ -13,6 +13,7 @@
 
     <!--
       |  added clipChildren and ClipToPadding properties to fix the floating button shadow
+      |  added Spinner for user to select the category to display
       -->
     <Spinner
         android:id="@+id/categories_spinner"

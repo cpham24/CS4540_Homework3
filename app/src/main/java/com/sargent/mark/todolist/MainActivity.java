@@ -15,9 +15,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.Spinner;
-import android.widget.Toast;
 
 import com.sargent.mark.todolist.data.Contract;
 import com.sargent.mark.todolist.data.DBHelper;
@@ -32,6 +30,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     ToDoListAdapter adapter;
     private final String TAG = "mainactivity";
     private String currentCategory;
+
+    /*
+     |  deleted class to hold to do item data because it is not used
+     |  implemented new listener methods to accommodate the new Spinner
+     |
+     */
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -49,13 +53,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         });
         rv = (RecyclerView) findViewById(R.id.recyclerView);
         rv.setLayoutManager(new LinearLayoutManager(this));
+
+        // get a reference to the Spinner and initialize it with an array of strings of categories to display
         sp = (Spinner) findViewById(R.id.categories_spinner);
-        // Create an ArrayAdapter using the string array and a default spinner layout
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
-                R.array.categories_array, android.R.layout.simple_spinner_item);
-        // Specify the layout to use when the list of choices appears
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.categories_array, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        // Apply the adapter to the spinner
         sp.setAdapter(adapter);
         sp.setOnItemSelectedListener(this);
     }
@@ -73,7 +75,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         helper = new DBHelper(this);
         db = helper.getWritableDatabase();
         currentCategory = "All";
-        cursor = getAllItems(db);
+        cursor = db.query(Contract.TABLE_TODO.TABLE_NAME, null, null, null, null, null, Contract.TABLE_TODO.COLUMN_NAME_DUE_DATE);
 
         // overridden the constructor to provide a db update for when the checkbox state changes
         adapter = new ToDoListAdapter(cursor, new ToDoListAdapter.ItemClickListener() {
@@ -112,7 +114,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 long id = (long) viewHolder.itemView.getTag();
                 Log.d(TAG, "passing id: " + id);
                 removeToDo(db, id);
-                adapter.swapCursor(getAllItems(db));
+                getItemsIn(db, currentCategory);
             }
         }).attachToRecyclerView(rv);
     }
@@ -120,44 +122,34 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void closeDialog(int year, int month, int day, String description, String category) {
         addToDo(db, description, category, formatDate(year, month, day));
-        cursor = getItemsIn(db, currentCategory);
-        adapter.swapCursor(cursor);
+        getItemsIn(db, currentCategory);
     }
 
     public String formatDate(int year, int month, int day) {
         return String.format("%d-%d-%d", year, month, day);
     }
 
-    private Cursor getAllItems(SQLiteDatabase db) {
-        return db.query(
-                Contract.TABLE_TODO.TABLE_NAME,
-                null,
-                null,
-                null,
-                null,
-                null,
-                Contract.TABLE_TODO.COLUMN_NAME_DUE_DATE
-        );
-    }
-
-    private Cursor getItemsIn(SQLiteDatabase db, String category) {
+    // implemented a function to query all categories or specific ones
+    private void getItemsIn(SQLiteDatabase db, String category) {
         Log.d(TAG, "User selected category: " + category);
-        currentCategory = category;
+        String where = Contract.TABLE_TODO.COLUMN_NAME_CATEGORY + "='" + category + "'";
 
-        if(category.equals("All")) {
-            return getAllItems(db);
-        }
-        else {
-            String where = Contract.TABLE_TODO.COLUMN_NAME_CATEGORY + "='" + category + "'";
-            return db.query(Contract.TABLE_TODO.TABLE_NAME, null, where, null, null, null, Contract.TABLE_TODO.COLUMN_NAME_DUE_DATE);
-        }
+        if(category.equals("All"))
+            where = null;
+
+        // properly close the old cursor and load a new one
+        cursor.close();
+        cursor = db.query(Contract.TABLE_TODO.TABLE_NAME, null, where, null, null, null, Contract.TABLE_TODO.COLUMN_NAME_DUE_DATE);
+        adapter.swapCursor(cursor);
     }
 
     private long addToDo(SQLiteDatabase db, String description, String category, String duedate) {
         ContentValues cv = new ContentValues();
         cv.put(Contract.TABLE_TODO.COLUMN_NAME_DESCRIPTION, description);
         cv.put(Contract.TABLE_TODO.COLUMN_NAME_DUE_DATE, duedate);
+        // default "checked" status of the to do item should be "no"
         cv.put(Contract.TABLE_TODO.COLUMN_NAME_CHECKED, "no");
+        // added a new column into this query to also include the category
         cv.put(Contract.TABLE_TODO.COLUMN_NAME_CATEGORY, category);
         return db.insert(Contract.TABLE_TODO.TABLE_NAME, null, cv);
     }
@@ -174,6 +166,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ContentValues cv = new ContentValues();
         cv.put(Contract.TABLE_TODO.COLUMN_NAME_DESCRIPTION, description);
         cv.put(Contract.TABLE_TODO.COLUMN_NAME_DUE_DATE, duedate);
+        // added a new column into this query to also update the category
         cv.put(Contract.TABLE_TODO.COLUMN_NAME_CATEGORY, category);
 
         return db.update(Contract.TABLE_TODO.TABLE_NAME, cv, Contract.TABLE_TODO._ID + "=" + id, null);
@@ -192,13 +185,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void closeUpdateDialog(int year, int month, int day, String description, String category, long id) {
         updateToDo(db, year, month, day, description, category, id);
-        adapter.swapCursor(getItemsIn(db, currentCategory));
+        getItemsIn(db, currentCategory);
     }
 
+    // implemented functions to handle selecting items in the Spinner
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-        String category = sp.getItemAtPosition(position).toString();
-        adapter.swapCursor(getItemsIn(db, category));
+        currentCategory = sp.getItemAtPosition(position).toString();
+        getItemsIn(db, currentCategory);
     }
 
     @Override

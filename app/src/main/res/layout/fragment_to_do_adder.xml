@@ -16,6 +16,10 @@
         android:layout_marginBottom="10dp"
         android:hint="Enter To Do" />
 
+    <!--
+      |  added a spinner to allow the user to select a category
+      -->
+
     <Spinner
         android:id="@+id/category"
         android:layout_width="match_parent"

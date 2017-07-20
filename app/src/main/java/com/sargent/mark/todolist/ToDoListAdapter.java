@@ -46,7 +46,7 @@ public class ToDoListAdapter extends RecyclerView.Adapter<ToDoListAdapter.ItemHo
     }
 
     public interface ItemClickListener {
-        void onItemClick(int pos, String description, String duedate, long id);
+        void onItemClick(int pos, String description, String category, String duedate, long id);
     }
 
     public interface CheckedListener {
@@ -80,6 +80,7 @@ public class ToDoListAdapter extends RecyclerView.Adapter<ToDoListAdapter.ItemHo
         String duedate;
         String description;
         String checked;
+        String category;
         long id;
 
         // modified the constructor to get reference to checkbox view
@@ -101,6 +102,7 @@ public class ToDoListAdapter extends RecyclerView.Adapter<ToDoListAdapter.ItemHo
             duedate = cursor.getString(cursor.getColumnIndex(Contract.TABLE_TODO.COLUMN_NAME_DUE_DATE));
             description = cursor.getString(cursor.getColumnIndex(Contract.TABLE_TODO.COLUMN_NAME_DESCRIPTION));
             checked = cursor.getString(cursor.getColumnIndex(Contract.TABLE_TODO.COLUMN_NAME_CHECKED));
+            category = cursor.getString(cursor.getColumnIndex(Contract.TABLE_TODO.COLUMN_NAME_CATEGORY));
             descr.setText(description);
             due.setText(duedate);
             cb.setChecked(checked.equals("yes"));
@@ -110,7 +112,7 @@ public class ToDoListAdapter extends RecyclerView.Adapter<ToDoListAdapter.ItemHo
         @Override
         public void onClick(View v) {
             int pos = getAdapterPosition();
-            clickListener.onItemClick(pos, description, duedate, id);
+            clickListener.onItemClick(pos, description, category, duedate, id);
         }
 
         // overridden this function to capture checkbox state change

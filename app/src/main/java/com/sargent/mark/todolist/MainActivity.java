@@ -13,14 +13,17 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.sargent.mark.todolist.data.Contract;
 import com.sargent.mark.todolist.data.DBHelper;
 
-public class MainActivity extends AppCompatActivity implements AddToDoFragment.OnDialogCloseListener, UpdateToDoFragment.OnUpdateDialogCloseListener{
-
+public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener,AddToDoFragment.OnDialogCloseListener, UpdateToDoFragment.OnUpdateDialogCloseListener{
+    private Spinner sp;
     private RecyclerView rv;
     private FloatingActionButton button;
     private DBHelper helper;
@@ -28,6 +31,7 @@ public class MainActivity extends AppCompatActivity implements AddToDoFragment.O
     private SQLiteDatabase db;
     ToDoListAdapter adapter;
     private final String TAG = "mainactivity";
+    private String currentCategory;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -45,6 +49,15 @@ public class MainActivity extends AppCompatActivity implements AddToDoFragment.O
         });
         rv = (RecyclerView) findViewById(R.id.recyclerView);
         rv.setLayoutManager(new LinearLayoutManager(this));
+        sp = (Spinner) findViewById(R.id.categories_spinner);
+        // Create an ArrayAdapter using the string array and a default spinner layout
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+                R.array.categories_array, android.R.layout.simple_spinner_item);
+        // Specify the layout to use when the list of choices appears
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        // Apply the adapter to the spinner
+        sp.setAdapter(adapter);
+        sp.setOnItemSelectedListener(this);
     }
 
     @Override
@@ -59,12 +72,13 @@ public class MainActivity extends AppCompatActivity implements AddToDoFragment.O
         super.onStart();
         helper = new DBHelper(this);
         db = helper.getWritableDatabase();
+        currentCategory = "All";
         cursor = getAllItems(db);
 
         // overridden the constructor to provide a db update for when the checkbox state changes
         adapter = new ToDoListAdapter(cursor, new ToDoListAdapter.ItemClickListener() {
             @Override
-            public void onItemClick(int pos, String description, String duedate, long id) {
+            public void onItemClick(int pos, String description, String category, String duedate, long id) {
                 Log.d(TAG, "item click id: " + id);
                 String[] dateInfo = duedate.split("-");
                 int year = Integer.parseInt(dateInfo[0].replaceAll("\\s", ""));
@@ -73,7 +87,7 @@ public class MainActivity extends AppCompatActivity implements AddToDoFragment.O
 
                 FragmentManager fm = getSupportFragmentManager();
 
-                UpdateToDoFragment frag = UpdateToDoFragment.newInstance(year, month, day, description, id);
+                UpdateToDoFragment frag = UpdateToDoFragment.newInstance(year, month, day, description, category, id);
                 frag.show(fm, "updatetodofragment");
             }
         }, new ToDoListAdapter.CheckedListener() {
@@ -104,9 +118,9 @@ public class MainActivity extends AppCompatActivity implements AddToDoFragment.O
     }
 
     @Override
-    public void closeDialog(int year, int month, int day, String description) {
-        addToDo(db, description, formatDate(year, month, day));
-        cursor = getAllItems(db);
+    public void closeDialog(int year, int month, int day, String description, String category) {
+        addToDo(db, description, category, formatDate(year, month, day));
+        cursor = getItemsIn(db, currentCategory);
         adapter.swapCursor(cursor);
     }
 
@@ -126,11 +140,25 @@ public class MainActivity extends AppCompatActivity implements AddToDoFragment.O
         );
     }
 
-    private long addToDo(SQLiteDatabase db, String description, String duedate) {
+    private Cursor getItemsIn(SQLiteDatabase db, String category) {
+        Log.d(TAG, "User selected category: " + category);
+        currentCategory = category;
+
+        if(category.equals("All")) {
+            return getAllItems(db);
+        }
+        else {
+            String where = Contract.TABLE_TODO.COLUMN_NAME_CATEGORY + "='" + category + "'";
+            return db.query(Contract.TABLE_TODO.TABLE_NAME, null, where, null, null, null, Contract.TABLE_TODO.COLUMN_NAME_DUE_DATE);
+        }
+    }
+
+    private long addToDo(SQLiteDatabase db, String description, String category, String duedate) {
         ContentValues cv = new ContentValues();
         cv.put(Contract.TABLE_TODO.COLUMN_NAME_DESCRIPTION, description);
         cv.put(Contract.TABLE_TODO.COLUMN_NAME_DUE_DATE, duedate);
         cv.put(Contract.TABLE_TODO.COLUMN_NAME_CHECKED, "no");
+        cv.put(Contract.TABLE_TODO.COLUMN_NAME_CATEGORY, category);
         return db.insert(Contract.TABLE_TODO.TABLE_NAME, null, cv);
     }
 
@@ -140,12 +168,13 @@ public class MainActivity extends AppCompatActivity implements AddToDoFragment.O
     }
 
 
-    private int updateToDo(SQLiteDatabase db, int year, int month, int day, String description, long id){
+    private int updateToDo(SQLiteDatabase db, int year, int month, int day, String description, String category, long id){
         String duedate = formatDate(year, month, day);
 
         ContentValues cv = new ContentValues();
         cv.put(Contract.TABLE_TODO.COLUMN_NAME_DESCRIPTION, description);
         cv.put(Contract.TABLE_TODO.COLUMN_NAME_DUE_DATE, duedate);
+        cv.put(Contract.TABLE_TODO.COLUMN_NAME_CATEGORY, category);
 
         return db.update(Contract.TABLE_TODO.TABLE_NAME, cv, Contract.TABLE_TODO._ID + "=" + id, null);
     }
@@ -161,8 +190,20 @@ public class MainActivity extends AppCompatActivity implements AddToDoFragment.O
     }
 
     @Override
-    public void closeUpdateDialog(int year, int month, int day, String description, long id) {
-        updateToDo(db, year, month, day, description, id);
-        adapter.swapCursor(getAllItems(db));
+    public void closeUpdateDialog(int year, int month, int day, String description, String category, long id) {
+        updateToDo(db, year, month, day, description, category, id);
+        adapter.swapCursor(getItemsIn(db, currentCategory));
+    }
+
+    @Override
+    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+        String category = sp.getItemAtPosition(position).toString();
+        adapter.swapCursor(getItemsIn(db, category));
+    }
+
+    @Override
+    public void onNothingSelected(AdapterView<?> parent) {
+        // don't do anything
+        Log.d(TAG, "Nothing selected");
     }
 }
